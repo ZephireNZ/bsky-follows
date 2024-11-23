@@ -7,18 +7,10 @@ import { storeToRefs } from 'pinia'
 import { ProcessedState, RankedResult, useBskyStore } from '@/stores/bskyStore'
 
 function bskyCrawling() {
-  const { follows, userPosts, progress, identifier, password, rawUserCounts } = storeToRefs(
-    useBskyStore(),
-  )
+  const { follows, userPosts, progress, identifier, rawUserCounts } = storeToRefs(useBskyStore())
   const pause = ref(false)
 
   const agent = new AtpAgent({ service: 'https://public.api.bsky.app' })
-
-  // TODO: Proper authentication
-  agent.login({
-    identifier: identifier.value,
-    password: password.value,
-  })
 
   async function getProfile(actor: string) {
     const { data, success } = await agent.getProfile({
@@ -56,6 +48,19 @@ function bskyCrawling() {
     return data.feed
   }
 
+  async function* getAllFollowsGenerator(actor: string) {
+    let cursor: string | undefined = undefined
+    do {
+      // Pause before continuing
+      await until(pause).not.toBeTruthy()
+
+      const { data, success } = await agent.getFollows({ actor, cursor })
+      if (!success) throw new Error(`Failed to load follows for ${actor} `)
+      yield data.follows
+      cursor = data.cursor
+    } while (cursor !== undefined)
+  }
+
   async function crawlFollows(user: string) {
     follows.value = (await getAllFollows(user)).map((f) => ({
       ...f,
@@ -63,22 +68,24 @@ function bskyCrawling() {
     }))
 
     for (const myFollow of follows.value) {
-      // Enabling pausing
-      await until(pause).not.toBeTruthy()
       console.log(`[${myFollow.handle}] starting`)
+
+      const { followsCount } = await getProfile(myFollow.did)
+
       myFollow.state = ProcessedState.Processing
+
       try {
-        const followings = await getAllFollows(myFollow.did)
+        for await (const followings of getAllFollowsGenerator(myFollow.did)) {
+          console.log(
+            `[${myFollow.handle}] found ${followings.length} of ${followsCount} followers`,
+          )
+          const filtered = followings.filter((f) => !follows.value.some((mf) => mf.did === f.did))
+          console.log(`[${myFollow.handle}] found ${filtered.length} filtered followers`)
 
-        console.log(`[${myFollow.handle}] found ${followings.length} followers`)
-
-        // Exclude users already being followed
-        const filtered = followings.filter((f) => !follows.value.some((mf) => mf.did === f.did))
-        console.log(`[${myFollow.handle}] found ${filtered.length} filtered followers`)
-
-        const start = Date.now()
-        rawUserCounts.value.push(...filtered.map((f) => f.did))
-        console.log(`took ${Date.now() - start}ms`)
+          const start = Date.now()
+          rawUserCounts.value.push(...filtered.map((f) => f.did))
+          console.log(`took ${Date.now() - start}ms`)
+        }
 
         myFollow.state = ProcessedState.Complete
         console.log(`[${myFollow.handle}] done`)

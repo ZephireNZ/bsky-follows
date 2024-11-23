@@ -27,8 +27,6 @@ export type RankedResult = {
 
 export const useBskyStore = defineStore('bsky', () => {
   const identifier = ref(auth.identifier)
-  const password = ref(auth.password)
-
   const userPosts = ref<{ [did: string]: FeedViewPost[] }>({})
 
   const follows = ref<Follow[]>([])
@@ -47,7 +45,6 @@ export const useBskyStore = defineStore('bsky', () => {
     progress,
     userPosts,
     identifier,
-    password,
     rawUserCounts,
   }
 })
