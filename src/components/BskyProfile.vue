@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import Galleria from 'primevue/galleria'
+import { computed } from 'vue'
+import { Card, Galleria, Avatar } from 'primevue'
 import { computedAsync } from '@vueuse/core'
 import { isView as isImageView } from '@atproto/api/dist/client/types/app/bsky/embed/images'
 import { isView as isVideoView } from '@atproto/api/dist/client/types/app/bsky/embed/video'
@@ -19,12 +19,6 @@ const { did, rank, follows } = defineProps<{
 
 const profile = await getProfile(did)
 
-const maxWidth = ref(200)
-const maxHeight = ref(200)
-
-const ratioWidth = 500
-const ratioHeight = computed(() => (maxWidth.value / maxHeight.value) * ratioWidth)
-
 const imagePosts = computedAsync(
   async () => {
     const posts = await getRecentImagePosts(did)
@@ -37,9 +31,6 @@ const imagePosts = computedAsync(
         if (isImageView(p.post.embed)) {
           const image = p.post.embed.images[0]
 
-          maxWidth.value = Math.max(maxWidth.value, image.aspectRatio?.width ?? 0)
-          maxHeight.value = Math.max(maxHeight.value, image.aspectRatio?.height ?? 0)
-
           return {
             image: image.fullsize,
             thumb: image.thumb,
@@ -49,9 +40,6 @@ const imagePosts = computedAsync(
         }
         if (isVideoView(p.post.embed)) {
           const video = p.post.embed
-
-          maxWidth.value = Math.max(maxWidth.value, video.aspectRatio?.width ?? 0)
-          maxHeight.value = Math.max(maxHeight.value, video.aspectRatio?.height ?? 0)
 
           return {
             video: video.playlist,
@@ -75,48 +63,23 @@ const showDisplayName = computed(() => !!profile.displayName && profile.displayN
 </script>
 
 <template>
-  <div class="flex-column">
-    <a :href="`https://bsky.app/profile/${profile.handle}`" target="_blank">
-      <div class="flex min-w-0 gap-x-4">
-        <div class="text-4xl font-bold">
-          {{ rank }}
-        </div>
-        <img class="size-32 flex-none rounded-full bg-gray-50" :src="profile.avatar" />
-        <div class="min-w-0 flex-auto">
-          <p class="text-sm/6 font-semibold text-gray-900">
-            {{ showDisplayName ? profile.displayName : profile.handle }}
-            <span class="font-normal">({{ follows }} of my follows)</span>
-          </p>
-          <p class="mt-1 truncate text-xs/5 text-gray-500">
-            {{ profile.handle }}
-          </p>
-
-          <hr class="m-2" />
-
-          <p style="white-space: pre-wrap">{{ profile.description }}</p>
-        </div>
-      </div>
-    </a>
-    <div class="mt-4" style="width: 500px">
-      <Galleria :value="imagePosts" :num-visible="4">
+  <Card class="h-full">
+    <template #header>
+      <Galleria :value="imagePosts" :num-visible="3" class="h-full">
         <template #item="{ item }">
-          <div class="flex flex-col bg-surface-900 w-full min-w-full">
-            <img
-              v-if="item.image"
-              :src="item.image"
-              class="w-full object-contain"
-              style="height: 500px"
-            />
+          <div class="flex flex-col bg-surface-900 w-full">
+            <img v-if="item.image" :src="item.image" class="w-full object-scale-down max-h-96" />
             <VideoPlayer
               v-if="item.video"
+              class="w-full"
               :src="item.video"
               :poster="item.thumb"
-              :volume="0"
+              :height="386"
+              muted
+              plays-inline
               controls
-              :height="500"
-              style="align-self: center"
             />
-            <div class="m-4 text-xl font-medium text-white" style="white-space: pre-wrap">
+            <div class="m-4 text-xs font-medium text-white" style="white-space: pre-wrap">
               {{ item.text }}
             </div>
           </div>
@@ -125,6 +88,34 @@ const showDisplayName = computed(() => !!profile.displayName && profile.displayN
           <img :src="item.thumb" class="size-20 object-cover" />
         </template>
       </Galleria>
-    </div>
-  </div>
+    </template>
+    <template #title>
+      <a :href="`https://bsky.app/profile/${profile.handle}`" target="_blank">
+        <div class="flex gap-2 items-center">
+          <div class="text-4xl font-bold">
+            {{ rank }}
+          </div>
+          <Avatar
+            :key="profile.did"
+            :image="profile.avatar"
+            :icon="!profile.avatar ? 'pi pi-user' : undefined"
+            size="large"
+            shape="circle"
+          />
+          <div>{{ showDisplayName ? profile.displayName : profile.handle }}</div>
+        </div>
+      </a>
+    </template>
+    <template #subtitle>
+      <div class="inline-flex gap-1 items-center">
+        <a :href="`https://bsky.app/profile/${profile.handle}`" target="_blank">
+          {{ profile.handle }}
+        </a>
+        <span class="font-normal text-sm italic">({{ follows }} of my follows)</span>
+      </div>
+    </template>
+    <template #content>
+      <p style="white-space: pre-wrap">{{ profile.description }}</p>
+    </template>
+  </Card>
 </template>
