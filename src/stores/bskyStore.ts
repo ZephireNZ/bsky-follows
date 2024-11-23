@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import type { FeedViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs'
 import { computed, reactive, ref } from 'vue'
-import auth from '@/../auth.json'
 
 export enum ProcessedState {
   NotStarted,
@@ -26,7 +25,7 @@ export type RankedResult = {
 }
 
 export const useBskyStore = defineStore('bsky', () => {
-  const identifier = ref(auth.identifier)
+  const identifier = ref()
   const userPosts = ref<{ [did: string]: FeedViewPost[] }>({})
 
   const follows = ref<Follow[]>([])
