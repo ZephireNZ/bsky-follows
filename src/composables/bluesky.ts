@@ -1,10 +1,9 @@
 import { createSharedComposable } from '@vueuse/core'
 import { AtpAgent } from '@atproto/api'
-import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import { until } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ProcessedState, RankedResult, useBskyStore } from '@/stores/bskyStore'
+import { Follow, ProcessedState, RankedResult, useBskyStore } from '@/stores/bskyStore'
 
 function bskyCrawling() {
   const { follows, userPosts, progress, identifier, rawUserCounts } = storeToRefs(useBskyStore())
@@ -19,19 +18,6 @@ function bskyCrawling() {
     if (!success) throw new Error(`Failed to load profile for ${actor}`)
 
     return data
-  }
-
-  async function getAllFollows(actor: string) {
-    const follows: ProfileView[] = []
-    let cursor: string | undefined = undefined
-    do {
-      const { data, success } = await agent.getFollows({ actor, cursor })
-      if (!success) throw new Error(`Failed to load follows for ${actor} `)
-      follows.push(...data.follows)
-      cursor = data.cursor
-    } while (cursor !== undefined)
-
-    return follows
   }
 
   async function getRecentImagePosts(actor: string) {
@@ -62,37 +48,48 @@ function bskyCrawling() {
   }
 
   async function crawlFollows(user: string) {
-    follows.value = (await getAllFollows(user)).map((f) => ({
-      ...f,
-      state: ProcessedState.NotStarted,
-    }))
+    const chunkSize = 10
 
-    for (const myFollow of follows.value) {
-      console.log(`[${myFollow.handle}] starting`)
+    // Populate top-level list of followers to crawl
+    follows.value = []
+    for await (const myFollows of getAllFollowsGenerator(user)) {
+      follows.value.push(...myFollows.map((f) => ({ ...f, state: ProcessedState.NotStarted })))
+    }
 
-      const { followsCount } = await getProfile(myFollow.did)
+    for (let idx = 0; idx < follows.value.length; idx += chunkSize) {
+      const chunk = follows.value.slice(idx, idx + chunkSize)
+      await Promise.all(chunk.map((f) => crawlUser(f)))
+    }
+  }
 
-      myFollow.state = ProcessedState.Processing
+  async function crawlUser(myFollow: Follow) {
+    console.log(`[${myFollow.handle}] starting`)
+    const { followsCount } = await getProfile(myFollow.did)
 
-      try {
-        for await (const followings of getAllFollowsGenerator(myFollow.did)) {
-          console.log(
-            `[${myFollow.handle}] found ${followings.length} of ${followsCount} followers`,
-          )
-          const filtered = followings.filter((f) => !follows.value.some((mf) => mf.did === f.did))
-          console.log(`[${myFollow.handle}] found ${filtered.length} filtered followers`)
+    if ((followsCount ?? 0) > 1000) {
+      console.warn(`Skipping ${myFollow.handle} due to ${followsCount} followers`)
+      myFollow.state = ProcessedState.Failed
+      return
+    }
 
-          const start = Date.now()
-          rawUserCounts.value.push(...filtered.map((f) => f.did))
-          console.log(`took ${Date.now() - start}ms`)
-        }
+    myFollow.state = ProcessedState.Processing
 
-        myFollow.state = ProcessedState.Complete
-        console.log(`[${myFollow.handle}] done`)
-      } catch (err) {
-        console.error(`Failed to crawl ${myFollow.handle}`, err)
-        myFollow.state = ProcessedState.Failed
+    try {
+      for await (const followings of getAllFollowsGenerator(myFollow.did)) {
+        console.log(`[${myFollow.handle}] found ${followings.length} of ${followsCount} followers`)
+        const filtered = followings.filter((f) => !follows.value.some((mf) => mf.did === f.did))
+        console.log(`[${myFollow.handle}] found ${filtered.length} filtered followers`)
+
+        const start = Date.now()
+        rawUserCounts.value.push(...filtered.map((f) => f.did))
+        console.log(`took ${Date.now() - start}ms`)
       }
+
+      myFollow.state = ProcessedState.Complete
+      console.log(`[${myFollow.handle}] done`)
+    } catch (err) {
+      console.error(`Failed to crawl ${myFollow.handle}`, err)
+      myFollow.state = ProcessedState.Failed
     }
   }
 
