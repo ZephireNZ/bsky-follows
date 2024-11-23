@@ -59,7 +59,7 @@ async function onClick() {
         <FloatLabel variant="in">
           <IconField>
             <InputIcon class="pi pi-search" />
-            <InputText v-model="username" type="text" />
+            <InputText v-model="username" class="w-full" type="text" />
           </IconField>
           <label for="username">Bluesky Username</label>
         </FloatLabel>
@@ -97,7 +97,7 @@ async function onClick() {
 <style lang="scss" scoped>
 .layout-sidebar {
   position: fixed;
-  width: 20rem;
+  width: 30rem;
   height: calc(100vh - 8rem);
   max-height: calc(100vh - 8rem);
   z-index: 999;

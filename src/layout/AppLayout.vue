@@ -79,7 +79,7 @@ import { Toast } from 'primevue'
 
     &.layout-static {
       .layout-main-container {
-        margin-left: 22rem;
+        margin-left: 32rem;
       }
 
       &.layout-static-inactive {
