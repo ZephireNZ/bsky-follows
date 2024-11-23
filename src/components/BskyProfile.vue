@@ -2,13 +2,15 @@
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import { computed, ref } from 'vue'
 import Galleria from 'primevue/galleria'
-import { getRecentImagePosts } from '../atproto'
 import { computedAsync } from '@vueuse/core'
 import { isView as isImageView } from '@atproto/api/dist/client/types/app/bsky/embed/images'
 import { isView as isVideoView } from '@atproto/api/dist/client/types/app/bsky/embed/video'
 import { isRecord as isPostRecord } from '@atproto/api/dist/client/types/app/bsky/feed/post'
 import { VideoPlayer } from '@videojs-player/vue'
 import 'video.js/dist/video-js.css'
+import { useBskyCrawling } from '@/composables/bluesky'
+
+const { getRecentImagePosts } = useBskyCrawling()
 
 const {
   rank = 1,

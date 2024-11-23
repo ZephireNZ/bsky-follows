@@ -34,23 +34,26 @@ export const nzGuys = await agent.app.bsky.graph.getList({
 
 export const myFollows = await getAllFollows('zephire.nz')
 
-export async function getRecentImagePosts(actor: string) {
-  const { data, success } = await agent.getAuthorFeed({
-    actor,
-    filter: 'posts_with_media',
-    limit: 10,
-  })
-  if (!success) throw new Error(`Failed to load posts for ${actor}`)
-
-  return data.feed
-}
-
 function bskyCrawling() {
-  const { follows, processedUsers, progress, ranked } = storeToRefs(useBskyStore())
+  const { follows, processedUsers, userPosts, progress, ranked } = storeToRefs(useBskyStore())
   const pause = ref(false)
 
   // TODO: configurable
   follows.value = myFollows.map((f) => ({ ...f, state: ProcessedState.NotStarted }))
+
+  async function getRecentImagePosts(actor: string) {
+    if (actor in userPosts.value) return userPosts.value[actor]
+
+    const { data, success } = await agent.getAuthorFeed({
+      actor,
+      filter: 'posts_with_media',
+      limit: 10,
+    })
+    if (!success) throw new Error(`Failed to load posts for ${actor}`)
+
+    userPosts.value[actor] = data.feed
+    return data.feed
+  }
 
   async function crawlFollows() {
     for (const myFollow of follows.value) {
@@ -85,8 +88,9 @@ function bskyCrawling() {
     processedUsers,
     progress,
     ranked,
-    crawlFollows,
     pause,
+    crawlFollows,
+    getRecentImagePosts,
   }
 }
 

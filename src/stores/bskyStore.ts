@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
+import type { FeedViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs'
 import { computed, ref } from 'vue'
 
 export enum ProcessedState {
@@ -23,6 +24,8 @@ export type RankedResult = Result & {
 }
 
 export const useBskyStore = defineStore('bsky', () => {
+  const userPosts = ref<{ [did: string]: FeedViewPost[] }>({})
+
   const follows = ref<Follow[]>([])
 
   const processedUsers = ref<{ [did: string]: Result }>({})
@@ -47,6 +50,7 @@ export const useBskyStore = defineStore('bsky', () => {
     follows,
     progress,
     processedUsers,
+    userPosts,
     ranked,
   }
 })
