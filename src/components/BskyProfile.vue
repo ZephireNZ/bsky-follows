@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import { computed, ref } from 'vue'
 import Galleria from 'primevue/galleria'
 import { computedAsync } from '@vueuse/core'
@@ -10,17 +9,15 @@ import { VideoPlayer } from '@videojs-player/vue'
 import 'video.js/dist/video-js.css'
 import { useBskyCrawling } from '@/composables/bluesky'
 
-const { getRecentImagePosts } = useBskyCrawling()
+const { getRecentImagePosts, processedUsers, userCounts } = useBskyCrawling()
 
-const {
-  rank = 1,
-  follows = 1,
-  profile,
-} = defineProps<{
+const { did, rank = 1 } = defineProps<{
+  did: string
   rank: number
-  follows: number
-  profile: ProfileView
 }>()
+
+const profile = processedUsers.value[did]
+const follows = computed(() => userCounts.value[did])
 
 const maxWidth = ref(200)
 const maxHeight = ref(200)
@@ -30,7 +27,7 @@ const ratioHeight = computed(() => (maxWidth.value / maxHeight.value) * ratioWid
 
 const imagePosts = computedAsync(
   async () => {
-    const posts = await getRecentImagePosts(profile.did)
+    const posts = await getRecentImagePosts(did)
 
     return posts
       .map((p) => {

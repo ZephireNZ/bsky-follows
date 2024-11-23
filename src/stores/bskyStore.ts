@@ -15,12 +15,12 @@ export type Follow = ProfileView & {
   state: ProcessedState
 }
 
-export type Result = {
-  profile: ProfileView
+export type Result = ProfileView & {
   follows: number
 }
 
-export type RankedResult = Result & {
+export type RankedResult = {
+  did: string
   rank: number
 }
 
@@ -32,14 +32,16 @@ export const useBskyStore = defineStore('bsky', () => {
 
   const follows = ref<Follow[]>([])
 
-  const processedUsers = ref<{ [did: string]: Result }>({})
+  const userCounts = ref<{ [did: string]: number }>({})
+
+  const processedUsers = ref<{ [did: string]: ProfileView }>({})
 
   const ranked = computed<RankedResult[]>(() =>
-    Object.values(processedUsers.value)
-      .sort((a, b) => b.follows - a.follows)
-      .map((result, ix) => ({
+    Object.entries(userCounts.value)
+      .sort(([_a, a], [_b, b]) => b - a)
+      .map(([did], ix) => ({
+        did,
         rank: ix + 1,
-        ...result,
       })),
   )
 
@@ -58,5 +60,6 @@ export const useBskyStore = defineStore('bsky', () => {
     ranked,
     identifier,
     password,
+    userCounts,
   }
 })
