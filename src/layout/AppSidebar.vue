@@ -1,12 +1,45 @@
 <script lang="ts" setup>
 import { useBskyCrawling } from '@/composables/bluesky'
-import { Panel, IconField, InputIcon, InputText, FloatLabel, Button } from 'primevue'
-import { ref } from 'vue'
+import { ProcessedState } from '@/stores/bskyStore'
+import {
+  Panel,
+  IconField,
+  InputIcon,
+  InputText,
+  FloatLabel,
+  Button,
+  Divider,
+  MeterGroup,
+  MeterItem,
+} from 'primevue'
+import { computed, ref } from 'vue'
 
-const { crawlFollows, pause } = useBskyCrawling()
+const { crawlFollows, pause, follows, progress, identifier } = useBskyCrawling()
 
 const started = ref(false)
-const username = ref('')
+const username = ref(identifier)
+
+const totalFollows = computed(() => follows.value.length)
+
+const meterItems = computed<MeterItem[]>(() => {
+  return [
+    {
+      label: 'Complete',
+      value: progress.value[ProcessedState.Complete],
+      color: '#22c55e',
+    },
+    {
+      label: 'Processing',
+      value: progress.value[ProcessedState.Processing],
+      color: '#eab308',
+    },
+    {
+      label: 'Failed',
+      value: progress.value[ProcessedState.Failed],
+      color: '#ef4444',
+    },
+  ]
+})
 
 async function onClick() {
   if (started.value) {
@@ -31,6 +64,8 @@ async function onClick() {
         </FloatLabel>
         <Button @click="onClick">{{ started ? (pause ? 'Resume' : 'Pause') : 'Start' }}</Button>
       </div>
+      <Divider />
+      <MeterGroup v-if="started" :value="meterItems" :max="totalFollows" />
     </Panel>
   </div>
 </template>
@@ -50,5 +85,9 @@ async function onClick() {
   background-color: var(--surface-overlay);
   border-radius: var(--content-border-radius);
   padding: 0.5rem 1.5rem;
+}
+
+:deep(.p-metergroup-label-list) {
+  display: none;
 }
 </style>

@@ -3,38 +3,34 @@ import { AtpAgent } from '@atproto/api'
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import { until } from '@vueuse/core'
 import { ref } from 'vue'
-import { identifier, password } from '@/../auth.json'
 import { storeToRefs } from 'pinia'
 import { ProcessedState, useBskyStore } from '@/stores/bskyStore'
 
-const agent = new AtpAgent({ service: 'https://bsky.social' })
-
-// TODO: Proper authentication
-await agent.login({
-  identifier,
-  password,
-})
-
-export async function getAllFollows(actor: string) {
-  const follows: ProfileView[] = []
-  let cursor: string | undefined = undefined
-  do {
-    const { data, success } = await agent.getFollows({ actor, cursor })
-    if (!success) throw new Error(`Failed to load follows for ${actor} `)
-    follows.push(...data.follows)
-    cursor = data.cursor
-  } while (cursor !== undefined)
-
-  return follows
-}
-
-export const nzGuys = await agent.app.bsky.graph.getList({
-  list: 'at://did:plc:mkdkke6se63a7shistfli75i/app.bsky.graph.list/3lalelcz43s2b',
-})
-
 function bskyCrawling() {
-  const { follows, processedUsers, userPosts, progress, ranked } = storeToRefs(useBskyStore())
+  const { follows, processedUsers, userPosts, progress, ranked, identifier, password } =
+    storeToRefs(useBskyStore())
   const pause = ref(false)
+
+  const agent = new AtpAgent({ service: 'https://bsky.social' })
+
+  // TODO: Proper authentication
+  agent.login({
+    identifier: identifier.value,
+    password: password.value,
+  })
+
+  async function getAllFollows(actor: string) {
+    const follows: ProfileView[] = []
+    let cursor: string | undefined = undefined
+    do {
+      const { data, success } = await agent.getFollows({ actor, cursor })
+      if (!success) throw new Error(`Failed to load follows for ${actor} `)
+      follows.push(...data.follows)
+      cursor = data.cursor
+    } while (cursor !== undefined)
+
+    return follows
+  }
 
   async function getRecentImagePosts(actor: string) {
     if (actor in userPosts.value) return userPosts.value[actor]
@@ -50,8 +46,8 @@ function bskyCrawling() {
     return data.feed
   }
 
-  async function crawlFollows(user?: string) {
-    follows.value = (await getAllFollows(user ?? identifier)).map((f) => ({
+  async function crawlFollows(user: string) {
+    follows.value = (await getAllFollows(user)).map((f) => ({
       ...f,
       state: ProcessedState.NotStarted,
     }))
@@ -91,6 +87,7 @@ function bskyCrawling() {
     pause,
     crawlFollows,
     getRecentImagePosts,
+    identifier,
   }
 }
 
