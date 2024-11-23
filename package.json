@@ -13,10 +13,14 @@
     "@videojs-player/vue": "^1.0.0",
     "@vueuse/core": "^11.2.0",
     "@wdns/vue-code-block": "^2.3.3",
+    "ky": "^1.7.2",
+    "primeicons": "^7.0.0",
     "primevue": "^4.2.2",
+    "sass-embedded": "^1.81.0",
     "tailwindcss-primeui": "^0.3.4",
     "video.js": "^8.19.1",
-    "vue": "^3.5.12"
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",
