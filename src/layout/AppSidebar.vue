@@ -67,10 +67,11 @@ async function onClick() {
         <MeterGroup :value="meterItems" :max="totalFollows" />
       </div>
       <Divider />
-      <VirtualScroller :items="follows" :item-size="64" class="shrink">
+      <VirtualScroller v-if="follows.length > 0" :items="follows" :item-size="64" class="shrink">
         <template #item="{ item: follow }">
           <div class="h-16 flex flex-row gap-1 items-center">
             <Avatar
+              :key="follow.did"
               :image="follow.avatar"
               :icon="!follow.avatar ? 'pi pi-user' : undefined"
               :class="{
