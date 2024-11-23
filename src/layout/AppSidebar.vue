@@ -11,6 +11,7 @@ import {
   Divider,
   MeterGroup,
   MeterItem,
+  Avatar,
 } from 'primevue'
 import { computed, ref } from 'vue'
 
@@ -53,7 +54,7 @@ async function onClick() {
 
 <template>
   <div class="layout-sidebar">
-    <Panel class="min-h-full">
+    <div class="flex flex-col bg-surface-900 text-surface-0 p-4 pb-0 rounded-lg h-full">
       <div class="flex flex-col gap-2">
         <FloatLabel variant="in">
           <IconField>
@@ -63,10 +64,30 @@ async function onClick() {
           <label for="username">Bluesky Username</label>
         </FloatLabel>
         <Button @click="onClick">{{ started ? (pause ? 'Resume' : 'Pause') : 'Start' }}</Button>
+        <MeterGroup :value="meterItems" :max="totalFollows" />
       </div>
-      <Divider />
-      <MeterGroup v-if="started" :value="meterItems" :max="totalFollows" />
-    </Panel>
+      <div class="overflow-y-auto shrink">
+        <Divider />
+        <div v-for="follow of follows">
+          <div class="flex flex-row gap-1 overflow-x-clip">
+            <Avatar
+              :image="follow.avatar"
+              :icon="!follow.avatar ? 'pi pi-user' : undefined"
+              :class="{
+                'ml-1': true,
+                'ring-2': true,
+                'ring-green-500': follow.state === ProcessedState.Complete,
+                'ring-yellow-500': follow.state === ProcessedState.Processing,
+                'ring-red-500': follow.state === ProcessedState.Failed,
+              }"
+              size="large"
+              shape="circle"
+            />
+            {{ follow.displayName !== '' ? follow.displayName : follow.handle }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,8 +96,9 @@ async function onClick() {
   position: fixed;
   width: 20rem;
   height: calc(100vh - 8rem);
+  max-height: calc(100vh - 8rem);
   z-index: 999;
-  overflow-y: auto;
+  // overflow-y: auto;
   user-select: none;
   top: 6rem;
   left: 2rem;
