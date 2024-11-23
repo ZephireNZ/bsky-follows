@@ -2,7 +2,6 @@
 import { useBskyCrawling } from '@/composables/bluesky'
 import { ProcessedState } from '@/stores/bskyStore'
 import {
-  Panel,
   IconField,
   InputIcon,
   InputText,
@@ -12,6 +11,7 @@ import {
   MeterGroup,
   MeterItem,
   Avatar,
+  VirtualScroller,
 } from 'primevue'
 import { computed, ref } from 'vue'
 
@@ -66,15 +66,15 @@ async function onClick() {
         <Button @click="onClick">{{ started ? (pause ? 'Resume' : 'Pause') : 'Start' }}</Button>
         <MeterGroup :value="meterItems" :max="totalFollows" />
       </div>
-      <div class="overflow-y-auto shrink">
-        <Divider />
-        <div v-for="follow of follows">
-          <div class="flex flex-row gap-1 overflow-x-clip">
+      <Divider />
+      <VirtualScroller :items="follows" :item-size="64" class="shrink">
+        <template #item="{ item: follow }">
+          <div class="h-16 flex flex-row gap-1 items-center">
             <Avatar
               :image="follow.avatar"
               :icon="!follow.avatar ? 'pi pi-user' : undefined"
               :class="{
-                'ml-1': true,
+                'm-1': true,
                 'ring-2': true,
                 'ring-green-500': follow.state === ProcessedState.Complete,
                 'ring-yellow-500': follow.state === ProcessedState.Processing,
@@ -83,10 +83,12 @@ async function onClick() {
               size="large"
               shape="circle"
             />
-            {{ follow.displayName !== '' ? follow.displayName : follow.handle }}
+            <div class="overflow-x-clip">
+              {{ follow.displayName !== '' ? follow.displayName : follow.handle }}
+            </div>
           </div>
-        </div>
-      </div>
+        </template>
+      </VirtualScroller>
     </div>
   </div>
 </template>
