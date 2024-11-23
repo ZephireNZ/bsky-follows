@@ -1,8 +1,12 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { Panel } from 'primevue'
+</script>
 
 <template>
   <div class="layout-sidebar">
-    <p>Hello world</p>
+    <Panel class="min-h-full">
+      <p>Hello world</p>
+    </Panel>
   </div>
 </template>
 
