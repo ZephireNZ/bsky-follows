@@ -32,14 +32,9 @@ export const nzGuys = await agent.app.bsky.graph.getList({
   list: 'at://did:plc:mkdkke6se63a7shistfli75i/app.bsky.graph.list/3lalelcz43s2b',
 })
 
-export const myFollows = await getAllFollows('zephire.nz')
-
 function bskyCrawling() {
   const { follows, processedUsers, userPosts, progress, ranked } = storeToRefs(useBskyStore())
   const pause = ref(false)
-
-  // TODO: configurable
-  follows.value = myFollows.map((f) => ({ ...f, state: ProcessedState.NotStarted }))
 
   async function getRecentImagePosts(actor: string) {
     if (actor in userPosts.value) return userPosts.value[actor]
@@ -55,14 +50,19 @@ function bskyCrawling() {
     return data.feed
   }
 
-  async function crawlFollows() {
+  async function crawlFollows(user?: string) {
+    follows.value = (await getAllFollows(user ?? identifier)).map((f) => ({
+      ...f,
+      state: ProcessedState.NotStarted,
+    }))
+
     for (const myFollow of follows.value) {
       // Enabling pausing
       await until(pause).not.toBeTruthy()
       myFollow.state = ProcessedState.Processing
       try {
         const followings = await getAllFollows(myFollow.did)
-        const filtered = followings.filter((f) => !myFollows.some((mf) => mf.did === f.did))
+        const filtered = followings.filter((f) => !follows.value.some((mf) => mf.did === f.did))
         console.log(`[${myFollow.handle}] found ${filtered.length} filtered followers`)
 
         for (const follow of filtered) {

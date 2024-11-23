@@ -1,11 +1,36 @@
 <script lang="ts" setup>
-import { Panel } from 'primevue'
+import { useBskyCrawling } from '@/composables/bluesky'
+import { Panel, IconField, InputIcon, InputText, FloatLabel, Button } from 'primevue'
+import { ref } from 'vue'
+
+const { crawlFollows, pause } = useBskyCrawling()
+
+const started = ref(false)
+const username = ref('')
+
+async function onClick() {
+  if (started.value) {
+    pause.value = !pause.value
+  } else {
+    started.value = true
+    await crawlFollows(username.value)
+  }
+}
 </script>
 
 <template>
   <div class="layout-sidebar">
     <Panel class="min-h-full">
-      <p>Hello world</p>
+      <div class="flex flex-col gap-2">
+        <FloatLabel variant="in">
+          <IconField>
+            <InputIcon class="pi pi-search" />
+            <InputText v-model="username" type="text" />
+          </IconField>
+          <label for="username">Bluesky Username</label>
+        </FloatLabel>
+        <Button @click="onClick">{{ started ? (pause ? 'Resume' : 'Pause') : 'Start' }}</Button>
+      </div>
     </Panel>
   </div>
 </template>
