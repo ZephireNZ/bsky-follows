@@ -9,15 +9,15 @@ import { VideoPlayer } from '@videojs-player/vue'
 import 'video.js/dist/video-js.css'
 import { useBskyCrawling } from '@/composables/bluesky'
 
-const { getRecentImagePosts, processedUsers, userCounts } = useBskyCrawling()
+const { getRecentImagePosts, getProfile } = useBskyCrawling()
 
-const { did, rank = 1 } = defineProps<{
+const { did, rank, follows } = defineProps<{
   did: string
   rank: number
+  follows: number
 }>()
 
-const profile = processedUsers.value[did]
-const follows = computed(() => userCounts.value[did])
+const profile = await getProfile(did)
 
 const maxWidth = ref(200)
 const maxHeight = ref(200)

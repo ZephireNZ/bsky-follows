@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs'
 import type { FeedViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import auth from '@/../auth.json'
 
 export enum ProcessedState {
@@ -22,6 +22,7 @@ export type Result = ProfileView & {
 export type RankedResult = {
   did: string
   rank: number
+  follows: number
 }
 
 export const useBskyStore = defineStore('bsky', () => {
@@ -32,18 +33,7 @@ export const useBskyStore = defineStore('bsky', () => {
 
   const follows = ref<Follow[]>([])
 
-  const userCounts = ref<{ [did: string]: number }>({})
-
-  const processedUsers = ref<{ [did: string]: ProfileView }>({})
-
-  const ranked = computed<RankedResult[]>(() =>
-    Object.entries(userCounts.value)
-      .sort(([_a, a], [_b, b]) => b - a)
-      .map(([did], ix) => ({
-        did,
-        rank: ix + 1,
-      })),
-  )
+  const rawUserCounts = reactive<string[]>([])
 
   const progress = computed(() => {
     return follows.value.reduce((rv, follow) => {
@@ -55,11 +45,9 @@ export const useBskyStore = defineStore('bsky', () => {
   return {
     follows,
     progress,
-    processedUsers,
     userPosts,
-    ranked,
     identifier,
     password,
-    userCounts,
+    rawUserCounts,
   }
 })
