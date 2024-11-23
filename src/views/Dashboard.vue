@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useBskyCrawling } from '@/composables/bluesky'
+import { Button } from 'primevue'
 import BskyProfile from '../components/BskyProfile.vue'
 
 const { ranked } = useBskyCrawling()
 
-const shown = computed(() => ranked.value.filter((f) => f.rank <= 20))
+const limit = ref(20)
+
+const shown = computed(() => ranked.value.filter((f) => f.rank <= limit.value))
 </script>
 
 <template>
@@ -21,6 +24,11 @@ const shown = computed(() => ranked.value.filter((f) => f.rank <= 20))
           </Suspense>
         </li>
       </ul>
+      <div>
+        <Button v-if="shown.length > 0" class="mt-4 w-full" @click="() => (limit += 20)">
+          Load More
+        </Button>
+      </div>
     </div>
   </main>
 </template>
