@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atproto/api": "^0.13.18",
     "@headlessui/vue": "^1.7.23",
     "@videojs-player/vue": "^1.0.0",
     "@vueuse/core": "^11.2.0",
